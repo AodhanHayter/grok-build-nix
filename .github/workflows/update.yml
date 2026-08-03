@@ -130,8 +130,13 @@ jobs:
         env:
           LATEST: ${{ needs.check.outputs.latest }}
         run: |
-          git tag -a "v$LATEST" -m "grok $LATEST"
-          git push origin "v$LATEST"
+          # Idempotent: a re-run after a half-finished job must not go red.
+          if git rev-parse -q --verify "refs/tags/v$LATEST" >/dev/null; then
+            echo "tag v$LATEST already exists, leaving it alone"
+          else
+            git tag -a "v$LATEST" -m "grok $LATEST"
+            git push origin "v$LATEST"
+          fi
 
           # `latest` is a moving tag, so it has to be force-replaced.
           git tag -f -a latest -m "grok $LATEST"

@@ -91,10 +91,8 @@ stdenv.mkDerivation {
     runHook postInstallCheck
   '';
 
-  passthru.updateScript = ./scripts/update-version.sh;
-
   meta = {
-    description = "SpaceXAI's terminal-based AI coding agent";
+    description = "xAI's terminal-based AI coding agent";
     longDescription = ''
       Grok Build (`grok`) is a full-screen terminal coding agent that reads and
       edits your codebase, runs shell commands, searches the web, and manages

@@ -101,8 +101,14 @@ write_sources() {
 }
 
 update_to() {
-  local version="$1" platform hash
+  local version="$1" platform hash platform_list
   local platforms_json='{}'
+
+  # Read the list up front rather than piping into the loop: a failing jq behind
+  # a process substitution would run the loop zero times and silently write back
+  # an empty platform map.
+  platform_list=$(platforms) || die "could not read .platforms from $SOURCES"
+  [ -n "$platform_list" ] || die ".platforms in $SOURCES is empty"
 
   log "fetching artifact hashes for $version..."
   while read -r platform; do
@@ -110,7 +116,7 @@ update_to() {
       die "no artifact for $platform at version $version (upstream may not have published it yet)"
     log "  $platform  $hash"
     platforms_json=$(jq -c --arg k "$platform" --arg v "$hash" '.[$k] = $v' <<<"$platforms_json")
-  done < <(platforms)
+  done <<<"$platform_list"
 
   write_sources "$version" "$platforms_json"
   log "sources.json updated to $version"
