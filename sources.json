@@ -1,0 +1,10 @@
+{
+  "channel": "stable",
+  "version": "0.2.118",
+  "platforms": {
+    "linux-aarch64": "sha256-VAEOM1qs5rXe3QIlOeznvIPzglPoY2qvB5ZWKu7LLmc=",
+    "linux-x86_64": "sha256-wZIoLmKr0kqb5kdQNj/4J9gGumE5GDmajGnIFbHaCPY=",
+    "macos-aarch64": "sha256-LeW5YJoDSS3WueTMqWN9ZR/pmLuDcb+fhS57KLOMA04=",
+    "macos-x86_64": "sha256-kxg8+wct+Iy6xwfkT4u8YtlHTSBH6chgVRnGS3IOJok="
+  }
+}

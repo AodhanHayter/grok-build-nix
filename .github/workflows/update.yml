@@ -1,0 +1,154 @@
+name: Update grok
+
+on:
+  schedule:
+    # Hourly, off the top of the hour to dodge the cron stampede.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Pin a specific version (default: latest on the tracked channel)'
+        required: false
+        type: string
+
+concurrency:
+  group: update-grok
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check channel
+    runs-on: ubuntu-latest
+    outputs:
+      update: ${{ steps.check.outputs.update }}
+      current: ${{ steps.check.outputs.current }}
+      latest: ${{ steps.check.outputs.latest }}
+      sources: ${{ steps.bump.outputs.sources }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      # PIN goes through the environment, never string interpolation, so a
+      # dispatch input can't become shell. The script also rejects non-semver.
+      - name: Check for a newer release
+        id: check
+        env:
+          PIN: ${{ inputs.version }}
+        run: |
+          args=()
+          if [ -n "$PIN" ]; then
+            args+=(--version "$PIN")
+          fi
+          ./scripts/update-version.sh --check "${args[@]}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump sources.json
+        id: bump
+        if: steps.check.outputs.update == 'true'
+        env:
+          TARGET: ${{ steps.check.outputs.latest }}
+        run: |
+          ./scripts/update-version.sh --version "$TARGET" --no-verify
+          echo "sources=$(jq -c . sources.json)" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: verify ${{ needs.check.outputs.latest }} (${{ matrix.os }})
+    needs: check
+    if: needs.check.outputs.update == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+        env:
+          NIX_FIRST_BUILD_UID: 400
+
+      - name: Apply candidate sources.json
+        env:
+          SOURCES: ${{ needs.check.outputs.sources }}
+        run: |
+          printf '%s' "$SOURCES" | jq . > sources.json
+          cat sources.json
+
+      - name: Build and smoke test
+        env:
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          nix build .#grok -o result --print-build-logs
+          ./result/bin/grok --version | grep -qF "$LATEST"
+
+      - name: Flake check
+        run: nix flake check --print-build-logs
+
+  commit:
+    name: Commit and tag
+    needs: [check, verify]
+    if: needs.check.outputs.update == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Apply verified sources.json
+        env:
+          SOURCES: ${{ needs.check.outputs.sources }}
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          printf '%s' "$SOURCES" | jq . > sources.json
+          test "$(jq -r .version sources.json)" = "$LATEST"
+
+      - name: Commit
+        env:
+          CURRENT: ${{ needs.check.outputs.current }}
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sources.json
+          git commit -m "grok $CURRENT -> $LATEST"
+          git push origin HEAD:main
+
+      - name: Tag
+        env:
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          git tag -a "v$LATEST" -m "grok $LATEST"
+          git push origin "v$LATEST"
+
+          # `latest` is a moving tag, so it has to be force-replaced.
+          git tag -f -a latest -m "grok $LATEST"
+          git push -f origin latest
+
+      - name: Summary
+        env:
+          CURRENT: ${{ needs.check.outputs.current }}
+          LATEST: ${{ needs.check.outputs.latest }}
+        run: |
+          {
+            echo "### grok updated"
+            echo
+            echo "| | version |"
+            echo "|---|---|"
+            echo "| from | \`$CURRENT\` |"
+            echo "| to | \`$LATEST\` |"
+            echo
+            echo "Verified on ubuntu-latest, ubuntu-24.04-arm and macos-latest before landing."
+          } >> "$GITHUB_STEP_SUMMARY"

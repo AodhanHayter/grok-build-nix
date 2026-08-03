@@ -1,0 +1,32 @@
+name: Update flake.lock
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      # PRs opened with GITHUB_TOKEN do not trigger CI. Add a PAT with `repo`
+      # scope as the FLAKE_LOCK_PAT secret to get CI on these PRs.
+      - uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
+        with:
+          token: ${{ secrets.FLAKE_LOCK_PAT || secrets.GITHUB_TOKEN }}
+          pr-title: 'chore: update flake.lock'
+          pr-labels: |
+            dependencies
+            automated

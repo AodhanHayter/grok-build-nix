@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+        env:
+          NIX_FIRST_BUILD_UID: 400
+
+      - name: Build
+        run: nix build .#grok -o result --print-build-logs
+
+      - name: Verify package contents
+        run: |
+          test -x ./result/bin/grok
+          test -f ./result/bin/.grok-unwrapped
+          test -f ./result/share/zsh/site-functions/_grok
+
+      - name: Smoke test
+        run: |
+          ./result/bin/grok --version
+          ./result/bin/grok --version | grep -qF "$(jq -r .version sources.json)"
+
+      - name: Flake check
+        run: nix flake check --print-build-logs
