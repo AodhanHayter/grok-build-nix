@@ -53,7 +53,7 @@ nix run github:AodhanHayter/grok-build-nix
 | Completions | bash, zsh and fish, generated from the binary at build time |
 | Auto-updater | disabled via `GROK_DISABLE_AUTOUPDATER=1` — the store is read-only, so updates come from bumping this flake |
 | `PATH` | suffixed with `git`, `ripgrep`, `procps`, and `bubblewrap` on Linux (grok's sandbox re-execs under `bwrap`) — suffixed, not prefixed, so your own tools still win |
-| Platforms | `aarch64-darwin`, `x86_64-darwin`, `x86_64-linux`, `aarch64-linux` |
+| Platforms | `aarch64-darwin`, `x86_64-linux`, `aarch64-linux` — every one built and smoke-tested in CI. `x86_64-darwin` is deliberately not packaged; nixpkgs is winding it down |
 
 The macOS builds carry xAI's code signature, so the derivation never strips them.
 The Linux builds are statically linked and need no patching.
