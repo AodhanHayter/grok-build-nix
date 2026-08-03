@@ -36,7 +36,7 @@ or apply the overlay and use `pkgs.grok` anywhere:
 nixpkgs.overlays = [ inputs.grok-build-nix.overlays.default ];
 ```
 
-Pin to a release instead of tracking `main` with `?ref=v0.2.118`, or to the
+Pin to a release instead of tracking `master` with `?ref=v0.2.118`, or to the
 newest verified build with `?ref=latest`.
 
 ### Try it without installing
@@ -68,12 +68,12 @@ pkgs.callPackage "${inputs.grok-build-nix}/package.nix" { binName = "grok-build"
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `update.yml` | hourly | Reads `https://x.ai/cli/stable`. On a new version: pins all four platform hashes, **builds and smoke-tests on ubuntu-latest, ubuntu-24.04-arm and macos-latest**, and only then commits to `main` and tags `v<version>` + moves `latest` |
+| `update.yml` | hourly | Reads `https://x.ai/cli/stable`. On a new version: pins every platform hash, **builds and smoke-tests on ubuntu-latest, ubuntu-24.04-arm and macos-latest**, and only then commits to `master` and tags `v<version>` + moves `latest` |
 | `ci.yml` | push / PR | Same build matrix plus `nix flake check` |
 | `update-flake-lock.yml` | weekly | Opens a PR bumping `nixpkgs` |
 | `dependabot.yml` | weekly | Pins for GitHub Actions |
 
-Nothing is committed before it is known to build, so `main` is always a working
+Nothing is committed before it is known to build, so `master` is always a working
 flake — that is why there is no PR-and-auto-merge dance.
 
 `update-flake-lock` PRs are opened with `GITHUB_TOKEN`, which by GitHub's design
