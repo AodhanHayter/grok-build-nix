@@ -21,8 +21,10 @@ jobs:
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      # PRs opened with GITHUB_TOKEN do not trigger CI. Add a PAT with `repo`
-      # scope as the FLAKE_LOCK_PAT secret to get CI on these PRs.
+      # Opening a PR from a workflow needs "Allow GitHub Actions to create and
+      # approve pull requests" (Settings > Actions), which is enabled on this
+      # repo. Separately, PRs opened with GITHUB_TOKEN never trigger CI — add a
+      # PAT with `repo` scope as the FLAKE_LOCK_PAT secret if you want CI on them.
       - uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
         with:
           token: ${{ secrets.FLAKE_LOCK_PAT || secrets.GITHUB_TOKEN }}
