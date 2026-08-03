@@ -48,7 +48,8 @@ jobs:
           if [ -n "$PIN" ]; then
             args+=(--version "$PIN")
           fi
-          ./scripts/update-version.sh --check "${args[@]}" >> "$GITHUB_OUTPUT"
+          # tee, not >>: otherwise the hourly run leaves no record of what it decided.
+          ./scripts/update-version.sh --check "${args[@]}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Bump sources.json
         id: bump
