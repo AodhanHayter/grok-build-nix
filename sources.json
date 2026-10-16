@@ -1,9 +1,9 @@
 {
   "channel": "stable",
-  "version": "1.0.60",
+  "version": "1.0.62",
   "platforms": {
-    "linux-aarch64": "sha256-Zlwoa2Z2DrGl5xmfYPuAKKWg0pDMjpzey6bJskr3uGI=",
-    "linux-x86_64": "sha256-EOavZLJHJPwQdMNz6Qa5rRIREARN3cvZetQ8OiX5bV8=",
-    "macos-aarch64": "sha256-mA+tHcs3cBAc8FzhtT/O6ixHBqaVek+5AAocBTocAlI="
+    "linux-aarch64": "sha256-C4CKIglyh4jS43w06hhG1GC0FSip/H7cdpi5597BL+E=",
+    "linux-x86_64": "sha256-KkbZ5Nfr16nP9/lXFnFLGdrV8h3SpJeCJACx+xKJaao=",
+    "macos-aarch64": "sha256-7ENOgxr9z86HeA8oFf1zKx34pKjelqSRcWrXXRNgWk4="
   }
 }
